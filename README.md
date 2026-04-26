@@ -82,4 +82,4 @@ docs/SRS.md        # Full Software Requirements Specification
 | M4 | Git revision comparison |
 | M5 | Performance hardening (1000+ node diagrams) |
 
-See [`docs/SRS.md`](docs/SRS.md) for the full specification.
+
