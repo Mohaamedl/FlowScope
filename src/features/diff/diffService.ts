@@ -1,131 +1,127 @@
+import { Differ, ChangeHandler } from 'bpmn-js-differ'
 import type { BpmnModel, DiffItem, DiffSummary, Severity } from '@/core/models'
 
-/** Structural element types are treated as critical changes. */
-const STRUCTURAL_TYPES = new Set([
-  'startEvent', 'endEvent', 'exclusiveGateway', 'parallelGateway',
-  'inclusiveGateway', 'eventBasedGateway', 'sequenceFlow',
+/** Structural element types are runtime-critical changes. */
+const CRITICAL_LOCAL_TYPES = new Set([
+  'startEvent', 'endEvent',
+  'exclusiveGateway', 'parallelGateway', 'inclusiveGateway', 'eventBasedGateway',
+  'sequenceFlow', 'messageFlow',
 ])
 
-/** Attributes whose change is treated as critical (runtime-impacting). */
+/** Attribute names that are critical when changed on any element type. */
 const CRITICAL_ATTRS = new Set([
-  'conditionExpression', 'eventDefinitionRef', 'sourceRef', 'targetRef',
-  'calledElement', 'implementation',
+  'conditionExpression', 'targetRef', 'sourceRef',
+  'calledElement', 'implementation', '$type',
 ])
 
-let _idCounter = 0
-function nextId(): string {
-  return `diff-${++_idCounter}`
+/** Extract the camelCase local name from a moddle $type string like 'bpmn:ServiceTask'. */
+function localType(el: unknown): string {
+  if (!el || typeof el !== 'object') return 'unknown'
+  const t = (el as Record<string, unknown>).$type
+  if (typeof t !== 'string') return 'unknown'
+  const local = t.split(':').pop() ?? t
+  return local.charAt(0).toLowerCase() + local.slice(1)
 }
 
-function severityFor(elementType: string, fieldPath?: string): Severity {
-  if (STRUCTURAL_TYPES.has(elementType)) return 'critical'
-  if (fieldPath && CRITICAL_ATTRS.has(fieldPath.replace(/^attrs\./, ''))) return 'critical'
-  if (fieldPath?.startsWith('extensions.')) return 'warning'
+function elementName(el: unknown): string | undefined {
+  if (!el || typeof el !== 'object') return undefined
+  const n = (el as Record<string, unknown>).name
+  return typeof n === 'string' && n.length > 0 ? n : undefined
+}
+
+function elementId(el: unknown): string {
+  if (!el || typeof el !== 'object') return 'unknown'
+  const id = (el as Record<string, unknown>).id
+  return typeof id === 'string' ? id : 'unknown'
+}
+
+function severityFor(type: string, fieldPath?: string): Severity {
+  if (CRITICAL_LOCAL_TYPES.has(type)) return 'critical'
+  if (fieldPath && CRITICAL_ATTRS.has(fieldPath)) return 'critical'
+  if (fieldPath?.includes('extension') || fieldPath?.includes('Extension')) return 'warning'
   return 'info'
 }
 
 /**
- * Compute semantic differences between two BPMN models.
- *
- * Algorithm:
- * 1. Elements in right but not left → added.
- * 2. Elements in left but not right → removed.
- * 3. Elements in both → compare attrs and extensions field-by-field → modified.
+ * Compute semantic + layout differences between two BPMN models using
+ * bpmn-js-differ, which operates on the moddle object graph for schema-aware
+ * diffing (correct reference handling, no back-reference false-positives,
+ * layout change detection).
  */
 export function computeDiff(left: BpmnModel, right: BpmnModel): DiffSummary {
+  const handler = new ChangeHandler()
+  new Differ().diff(left.definitions, right.definitions, handler)
+
   const items: DiffItem[] = []
 
-  // Pass 1: added (in right, not in left)
-  for (const [id, rEl] of right.elements) {
-    if (!left.elements.has(id)) {
+  // Added
+  for (const [id, el] of Object.entries(handler._added)) {
+    const type = localType(el)
+    items.push({
+      id: `added-${id}`,
+      changeType: 'added',
+      elementId: id,
+      elementType: type,
+      elementName: elementName(el),
+      severity: severityFor(type),
+    })
+  }
+
+  // Removed
+  for (const [id, el] of Object.entries(handler._removed)) {
+    const type = localType(el)
+    items.push({
+      id: `removed-${id}`,
+      changeType: 'removed',
+      elementId: id,
+      elementType: type,
+      elementName: elementName(el),
+      severity: severityFor(type),
+    })
+  }
+
+  // Changed — one DiffItem per changed property
+  for (const [id, entry] of Object.entries(handler._changed)) {
+    const el = entry.model
+    const type = localType(el)
+    for (const [prop, change] of Object.entries(entry.attrs)) {
       items.push({
-        id: nextId(),
-        changeType: 'added',
+        id: `changed-${id}-${prop}`,
+        changeType: 'modified',
         elementId: id,
-        elementType: rEl.type,
-        elementName: rEl.name,
-        severity: severityFor(rEl.type),
+        elementType: type,
+        elementName: elementName(el),
+        fieldPath: prop,
+        before: change.oldValue,
+        after: change.newValue,
+        severity: severityFor(type, prop),
       })
     }
   }
 
-  // Pass 2: removed (in left, not in right)
-  for (const [id, lEl] of left.elements) {
-    if (!right.elements.has(id)) {
-      items.push({
-        id: nextId(),
-        changeType: 'removed',
-        elementId: id,
-        elementType: lEl.type,
-        elementName: lEl.name,
-        severity: severityFor(lEl.type),
-      })
-    }
-  }
-
-  // Pass 3: modified (present in both — diff attrs + extensions)
-  for (const [id, lEl] of left.elements) {
-    const rEl = right.elements.get(id)
-    if (!rEl) continue
-
-    // --- attribute-level diff ---
-    const allAttrKeys = new Set([
-      ...Object.keys(lEl.attrs),
-      ...Object.keys(rEl.attrs),
-    ])
-
-    for (const key of allAttrKeys) {
-      const before = lEl.attrs[key]
-      const after = rEl.attrs[key]
-      if (before !== after) {
-        const fieldPath = `attrs.${key}`
-        items.push({
-          id: nextId(),
-          changeType: 'modified',
-          elementId: id,
-          elementType: lEl.type,
-          elementName: rEl.name ?? lEl.name,
-          fieldPath,
-          before,
-          after,
-          severity: severityFor(lEl.type, fieldPath),
-        })
-      }
-    }
-
-    // --- extension-level diff ---
-    const lExt = lEl.extensions ?? {}
-    const rExt = rEl.extensions ?? {}
-    const allExtKeys = new Set([...Object.keys(lExt), ...Object.keys(rExt)])
-
-    for (const key of allExtKeys) {
-      const before = lExt[key]
-      const after = rExt[key]
-      if (JSON.stringify(before) !== JSON.stringify(after)) {
-        const fieldPath = `extensions.${key}`
-        items.push({
-          id: nextId(),
-          changeType: 'modified',
-          elementId: id,
-          elementType: lEl.type,
-          elementName: rEl.name ?? lEl.name,
-          fieldPath,
-          before,
-          after,
-          severity: severityFor(lEl.type, fieldPath),
-        })
-      }
-    }
-  }
-
-  const counts = {
-    added: items.filter(i => i.changeType === 'added').length,
-    removed: items.filter(i => i.changeType === 'removed').length,
-    modified: items.filter(i => i.changeType === 'modified').length,
+  // Layout changed (position / size / waypoints)
+  for (const [id, el] of Object.entries(handler._layoutChanged)) {
+    // Skip if the element already has a semantic change entry — avoid duplicates
+    if (handler._changed[id] || handler._added[id] || handler._removed[id]) continue
+    const type = localType(el)
+    items.push({
+      id: `layout-${id}`,
+      changeType: 'layout',
+      elementId: id,
+      elementType: type,
+      elementName: elementName(el) ?? elementId(el),
+      fieldPath: 'layout',
+      severity: 'info',
+    })
   }
 
   return {
-    counts,
+    counts: {
+      added:    items.filter(i => i.changeType === 'added').length,
+      removed:  items.filter(i => i.changeType === 'removed').length,
+      modified: items.filter(i => i.changeType === 'modified').length,
+      layout:   items.filter(i => i.changeType === 'layout').length,
+    },
     items,
     source: {
       leftLabel: left.label,

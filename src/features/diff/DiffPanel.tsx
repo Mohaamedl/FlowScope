@@ -8,6 +8,7 @@ const FILTERS: { value: DiffFilter; label: string }[] = [
   { value: 'added', label: 'Added' },
   { value: 'removed', label: 'Removed' },
   { value: 'modified', label: 'Modified' },
+  { value: 'layout', label: 'Layout' },
 ]
 
 export function DiffPanel() {
@@ -40,6 +41,7 @@ export function DiffPanel() {
           <span className="badge badge--added">+{counts.added}</span>
           <span className="badge badge--removed">-{counts.removed}</span>
           <span className="badge badge--modified">~{counts.modified}</span>
+          <span className="badge badge--layout">⇥{counts.layout}</span>
         </div>
       </header>
 

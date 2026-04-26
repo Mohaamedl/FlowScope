@@ -216,6 +216,7 @@ button:disabled {
 .badge--added    { background: var(--color-added-bg);    color: var(--color-added);    border: 1px solid var(--color-added); }
 .badge--removed  { background: var(--color-removed-bg);  color: var(--color-removed);  border: 1px solid var(--color-removed); }
 .badge--modified { background: var(--color-modified-bg); color: var(--color-modified); border: 1px solid var(--color-modified); }
+.badge--layout   { background: #0c1a3a; color: #7dd3fc; border: 1px solid #38bdf8; }
 
 .diff-panel__filters {
   display: flex;
@@ -281,6 +282,7 @@ button:disabled {
 .diff-item__badge--added    { background: var(--color-added);    color: #fff; }
 .diff-item__badge--removed  { background: var(--color-removed);  color: #fff; }
 .diff-item__badge--modified { background: var(--color-modified); color: #000; }
+.diff-item__badge--layout   { background: #38bdf8; color: #000; }
 
 .diff-item__info {
   flex: 1;

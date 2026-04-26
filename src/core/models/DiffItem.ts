@@ -1,5 +1,5 @@
 /** The kind of change detected for a BPMN element or attribute. */
-export type ChangeType = 'added' | 'removed' | 'modified'
+export type ChangeType = 'added' | 'removed' | 'modified' | 'layout'
 
 /**
  * Severity reflects how impactful the change is expected to be on runtime
@@ -16,7 +16,7 @@ export interface DiffItem {
   elementId: string
   elementType: string
   elementName?: string
-  /** Dot-path to the changed field, e.g. "attrs.name" or "extensions.camunda:script". */
+  /** Property path from bpmn-js-differ, e.g. "name", "targetRef", "eventDefinitions[0]". */
   fieldPath?: string
   before?: unknown
   after?: unknown
@@ -29,6 +29,7 @@ export interface DiffSummary {
     added: number
     removed: number
     modified: number
+    layout: number
   }
   items: DiffItem[]
   source: {

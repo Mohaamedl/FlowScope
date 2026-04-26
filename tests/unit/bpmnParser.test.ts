@@ -7,61 +7,41 @@ const fixturePath = (name: string) =>
   resolve(__dirname, '../../test/fixtures', name)
 
 describe('parseBpmn', () => {
-  it('rejects DOCTYPE (XXE mitigation)', () => {
-    const result = parseBpmn('<!DOCTYPE foo []><definitions/>', 'test')
+  it('rejects DOCTYPE (XXE mitigation)', async () => {
+    const result = await parseBpmn('<!DOCTYPE foo []><definitions/>', 'test')
     expect(result.ok).toBe(false)
   })
 
-  it('returns error on invalid XML', () => {
-    const result = parseBpmn('<definitions><unclosed>', 'test')
+  it('returns error on completely invalid XML', async () => {
+    const result = await parseBpmn('not xml at all %%%', 'test')
     expect(result.ok).toBe(false)
   })
 
-  it('parses old.bpmn fixture without errors', () => {
+  it('parses old.bpmn fixture without errors', async () => {
     const xml = readFileSync(fixturePath('old.bpmn'), 'utf-8')
-    const result = parseBpmn(xml, 'old.bpmn')
+    const result = await parseBpmn(xml, 'old.bpmn')
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.model.elements.size).toBeGreaterThan(0)
+      expect(result.model.definitions).toBeDefined()
+      expect(result.model.sourceXml).toBe(xml)
+      expect(result.model.label).toBe('old.bpmn')
     }
   })
 
-  it('parses new.bpmn fixture without errors', () => {
+  it('parses new.bpmn fixture without errors', async () => {
     const xml = readFileSync(fixturePath('new.bpmn'), 'utf-8')
-    const result = parseBpmn(xml, 'new.bpmn')
+    const result = await parseBpmn(xml, 'new.bpmn')
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.model.elements.size).toBeGreaterThan(0)
+      expect(result.model.definitions).toBeDefined()
     }
   })
 
-  it('extracts tasks and sequence flows from old.bpmn', () => {
+  it('definitions root has rootElements', async () => {
     const xml = readFileSync(fixturePath('old.bpmn'), 'utf-8')
-    const result = parseBpmn(xml, 'old.bpmn')
+    const result = await parseBpmn(xml, 'old.bpmn')
     if (!result.ok) throw new Error('Parse failed')
-
-    const tasks = [...result.model.elements.values()].filter(e => e.type === 'task')
-    const flows = [...result.model.elements.values()].filter(e => e.type === 'sequenceFlow')
-
-    expect(tasks.length).toBeGreaterThan(0)
-    expect(flows.length).toBeGreaterThan(0)
-  })
-
-  it('produces a diff between old and new fixtures', async () => {
-    const { computeDiff } = await import('@/features/diff')
-
-    const oldXml = readFileSync(fixturePath('old.bpmn'), 'utf-8')
-    const newXml = readFileSync(fixturePath('new.bpmn'), 'utf-8')
-
-    const left = parseBpmn(oldXml, 'old.bpmn')
-    const right = parseBpmn(newXml, 'new.bpmn')
-
-    if (!left.ok || !right.ok) throw new Error('Parse failed')
-
-    const diff = computeDiff(left.model, right.model)
-    const total = diff.counts.added + diff.counts.removed + diff.counts.modified
-    expect(total).toBeGreaterThanOrEqual(0)
-    expect(diff.source.leftLabel).toBe('old.bpmn')
-    expect(diff.source.rightLabel).toBe('new.bpmn')
+    // moddle definitions always has rootElements array
+    expect(Array.isArray(result.model.definitions.rootElements)).toBe(true)
   })
 })

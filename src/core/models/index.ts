@@ -1,2 +1,2 @@
-export type { BpmnElement, BpmnModel } from './BpmnElement'
+export type { BpmnModel } from './BpmnElement'
 export type { ChangeType, Severity, DiffItem, DiffSummary } from './DiffItem'

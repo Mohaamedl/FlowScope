@@ -17,8 +17,8 @@ export function App() {
   const setDiffSummary = useStore(s => s.setDiffSummary)
 
   const handleLoad = useCallback(
-    (side: 'left' | 'right') => (xml: string, filename: string) => {
-      const result = parseBpmn(xml, filename)
+    (side: 'left' | 'right') => async (xml: string, filename: string) => {
+      const result = await parseBpmn(xml, filename)
       if (!result.ok) {
         alert(`Failed to parse ${filename}:\n${result.errors.map(e => e.message).join('\n')}`)
         return
