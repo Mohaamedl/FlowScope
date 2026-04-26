@@ -34,7 +34,7 @@
             <semantic:outgoing>_6-748</semantic:outgoing>
             <semantic:messageEventDefinition messageRef="_1275940932433"/>
         </semantic:intermediateCatchEvent>
-        <semantic:task completionQuantity="1" isForCompensation="false" startQuantity="1" name="Calm customer git here" id="_6-695">
+        <semantic:task completionQuantity="1" isForCompensation="false" startQuantity="1" name="Calm customer" id="_6-695">
             <semantic:incoming>_6-748</semantic:incoming>
             <semantic:outgoing>_6-746</semantic:outgoing>
         </semantic:task>
@@ -46,7 +46,7 @@
             <semantic:incoming>_6-632</semantic:incoming>
             <semantic:outgoing>_6-634</semantic:outgoing>
         </semantic:task>
-        <semantic:task completionQuantity="1" isForCompensation="false" startQuantity="1" name="Receive payment git here" id="_6-565">
+        <semantic:task completionQuantity="1" isForCompensation="false" startQuantity="1" name="Receive payment" id="_6-565">
             <semantic:incoming>_6-634</semantic:incoming>
             <semantic:outgoing>_6-636</semantic:outgoing>
         </semantic:task>

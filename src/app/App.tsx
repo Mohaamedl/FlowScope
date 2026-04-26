@@ -7,6 +7,8 @@ import { BpmnViewer } from '@/features/editor/BpmnViewer'
 import { FileImport } from '@/features/editor/FileImport'
 import { XmlEditor } from '@/features/editor/XmlEditor'
 import { SearchBar } from '@/features/search/SearchBar'
+import { fetchGitHubBpmnAtRef, type GitCommitMetadata } from '@/features/git/githubService'
+import { FlowScopeBrand } from '@/shared/ui/FlowScopeBrand'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 
@@ -39,6 +41,18 @@ export function App() {
 
   // Tracks right side XML for the XML editor
   const [rightXml, setRightXml] = useState('')
+
+  // Git compare state
+  const [gitOwner, setGitOwner] = useState('Mohaamedl')
+  const [gitRepo, setGitRepo] = useState('FlowScope')
+  const [gitFilePath, setGitFilePath] = useState('test/fixtures/old.bpmn')
+  const [leftRef, setLeftRef] = useState('main')
+  const [rightRef, setRightRef] = useState('main')
+  const [leftRefMeta, setLeftRefMeta] = useState<GitCommitMetadata | null>(null)
+  const [rightRefMeta, setRightRefMeta] = useState<GitCommitMetadata | null>(null)
+  const [gitError, setGitError] = useState<string | null>(null)
+  const [gitBusy, setGitBusy] = useState(false)
+  const [gitCompareEnabled, setGitCompareEnabled] = useState(false)
 
   // ── Stable refs so callbacks don't recreate when models change ───────────
   const leftModelRef  = useRef(leftModel)
@@ -164,6 +178,90 @@ export function App() {
     await handleLoad(side)(xml, bpmnFile.name)
   }
 
+  const loadModelFromGitRef = useCallback(async (side: 'left' | 'right', ref: string) => {
+    setGitError(null)
+    const result = await fetchGitHubBpmnAtRef({
+      owner: gitOwner,
+      repo: gitRepo,
+      ref,
+      filePath: gitFilePath,
+    })
+
+    if (!result.ok) {
+      setGitError(result.error)
+      return null
+    }
+
+    const label = `${gitOwner}/${gitRepo}@${ref}:${gitFilePath}`
+    const parsed = await parseBpmn(result.xml, label)
+    if (!parsed.ok) {
+      setGitError(parsed.errors.map(e => e.message).join(' | '))
+      return null
+    }
+
+    if (side === 'left') {
+      setLeftModel(parsed.model)
+      setLeftRefMeta(result.metadata)
+    } else {
+      setRightModel(parsed.model)
+      setRightXml(result.xml)
+      setRightRefMeta(result.metadata)
+    }
+
+    return parsed.model
+  }, [gitOwner, gitRepo, gitFilePath, setLeftModel, setRightModel])
+
+  const handleLoadLeftRef = useCallback(async () => {
+    if (!leftRef.trim()) return
+    setGitBusy(true)
+    try {
+      await loadModelFromGitRef('left', leftRef.trim())
+      setDiffSummary(null)
+    } finally {
+      setGitBusy(false)
+    }
+  }, [leftRef, loadModelFromGitRef, setDiffSummary])
+
+  const handleLoadRightRef = useCallback(async () => {
+    if (!rightRef.trim()) return
+    setGitBusy(true)
+    try {
+      await loadModelFromGitRef('right', rightRef.trim())
+      setDiffSummary(null)
+    } finally {
+      setGitBusy(false)
+    }
+  }, [rightRef, loadModelFromGitRef, setDiffSummary])
+
+  const handleCompareRefs = useCallback(async () => {
+    if (!leftRef.trim() || !rightRef.trim()) return
+    setGitBusy(true)
+    try {
+      const left = await loadModelFromGitRef('left', leftRef.trim())
+      const right = await loadModelFromGitRef('right', rightRef.trim())
+      if (left && right) setDiffSummary(computeDiff(left, right))
+    } finally {
+      setGitBusy(false)
+    }
+  }, [leftRef, rightRef, loadModelFromGitRef, setDiffSummary])
+
+  const handleCompareLeftRefWithWorkingTree = useCallback(async () => {
+    if (!leftRef.trim()) return
+    const workingTreeModel = rightModel
+    if (!workingTreeModel) {
+      setGitError('Load or edit a target model first to compare against working tree state.')
+      return
+    }
+
+    setGitBusy(true)
+    try {
+      const left = await loadModelFromGitRef('left', leftRef.trim())
+      if (left) setDiffSummary(computeDiff(left, workingTreeModel))
+    } finally {
+      setGitBusy(false)
+    }
+  }, [leftRef, loadModelFromGitRef, rightModel, setDiffSummary])
+
   const updateSplitFromClientX = useCallback((clientX: number) => {
     const workspace = visualWorkspaceRef.current
     if (!workspace) return
@@ -204,7 +302,7 @@ export function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1 className="app-title">FlowScope</h1>
+        <FlowScopeBrand compact showTagline={false} />
 
         <div className="app-header__actions">
           <SearchBar />
@@ -244,6 +342,78 @@ export function App() {
           )}
         </div>
       </header>
+
+      <section className="git-compare-shell" aria-label="Git comparison controls">
+        <button
+          type="button"
+          className="git-toggle"
+          onClick={() => setGitCompareEnabled(enabled => !enabled)}
+        >
+          <span className="git-toggle__label">Git Compare</span>
+          <span className="git-toggle__state">{gitCompareEnabled ? 'On' : 'Off'}</span>
+        </button>
+
+        {gitCompareEnabled && (
+          <div className="git-compare-bar">
+            <div className="git-compare-grid">
+              <input
+                className="git-input"
+                value={gitOwner}
+                onChange={(e) => setGitOwner(e.target.value)}
+                placeholder="owner"
+                aria-label="Git owner"
+              />
+              <input
+                className="git-input"
+                value={gitRepo}
+                onChange={(e) => setGitRepo(e.target.value)}
+                placeholder="repo"
+                aria-label="Git repository"
+              />
+              <input
+                className="git-input git-input--path"
+                value={gitFilePath}
+                onChange={(e) => setGitFilePath(e.target.value)}
+                placeholder="path/to/file.bpmn"
+                aria-label="BPMN file path in repository"
+              />
+              <input
+                className="git-input"
+                value={leftRef}
+                onChange={(e) => setLeftRef(e.target.value)}
+                placeholder="left ref"
+                aria-label="Left git ref"
+              />
+              <input
+                className="git-input"
+                value={rightRef}
+                onChange={(e) => setRightRef(e.target.value)}
+                placeholder="right ref"
+                aria-label="Right git ref"
+              />
+              <button type="button" className="git-btn" onClick={handleLoadLeftRef} disabled={gitBusy}>Load Left Ref</button>
+              <button type="button" className="git-btn" onClick={handleLoadRightRef} disabled={gitBusy}>Load Right Ref</button>
+              <button type="button" className="git-btn git-btn--primary" onClick={handleCompareRefs} disabled={gitBusy}>Compare Refs</button>
+              <button type="button" className="git-btn" onClick={handleCompareLeftRefWithWorkingTree} disabled={gitBusy}>Left Ref vs Working Tree</button>
+            </div>
+            {(leftRefMeta || rightRefMeta || gitError) && (
+              <div className="git-compare-meta">
+                {leftRefMeta && (
+                  <span className="git-meta-item">
+                    Left: {leftRefMeta.sha} by {leftRefMeta.author} - {leftRefMeta.message}
+                  </span>
+                )}
+                {rightRefMeta && (
+                  <span className="git-meta-item">
+                    Right: {rightRefMeta.sha} by {rightRefMeta.author} - {rightRefMeta.message}
+                  </span>
+                )}
+                {gitError && <span className="git-meta-item git-meta-item--error">{gitError}</span>}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
 
       <main 
         className={`app-main ${dragActive ? 'app-main--drag-active' : ''} ${dragTarget ? `app-main--drop-zone-${dragTarget}` : ''} ${diffPanelOpen ? '' : 'app-main--diff-collapsed'}`}
@@ -343,6 +513,19 @@ export function App() {
           onToggle={() => setDiffPanelOpen(o => !o)} 
         />
       </main>
+
+      <footer className="app-footer" aria-label="FlowScope highlights">
+        <div className="app-footer__brand">
+          <FlowScopeBrand showTagline={false} />
+          <span className="app-footer__tagline">Visual diff and version control for BPMN workflows.</span>
+        </div>
+        <div className="app-footer__highlights">
+          <span>Visual Diff</span>
+          <span>Code Aware</span>
+          <span>Git Integrated</span>
+          <span>Collaborate</span>
+        </div>
+      </footer>
     </div>
   )
 }

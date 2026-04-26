@@ -1,6 +1,11 @@
 // CSS imports
 declare module '*.css'
 
+declare module '*.png' {
+  const src: string
+  export default src
+}
+
 // bpmn-js — no official @types
 declare module 'bpmn-js' {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
