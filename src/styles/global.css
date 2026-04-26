@@ -106,6 +106,10 @@ body {
   width: clamp(104px, 14vw, 140px);
 }
 
+.app-header .flow-brand--compact .flow-brand__mark {
+  width: clamp(40px, 6vw, 52px);
+}
+
 .flow-brand__copy {
   display: flex;
   flex-direction: column;
