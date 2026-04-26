@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
 import type { DiffItem } from '@/core/models'
+import { useEffect, useRef } from 'react'
 
 // bpmn-js is CommonJS — types declared in src/global.d.ts
 import BpmnJS from 'bpmn-js'
+import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css'
 import 'bpmn-js/dist/assets/bpmn-js.css'
 import 'bpmn-js/dist/assets/diagram-js.css'
 
@@ -19,11 +20,26 @@ interface Props {
   diffItems?: DiffItem[]
   activeItemId?: string | null
   onReady?: () => void
+  showControls?: boolean
 }
 
-export function BpmnViewer({ xml, label, diffItems = [], activeItemId, onReady }: Props) {
+export function BpmnViewer({ xml, label, diffItems = [], activeItemId, onReady, showControls = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<InstanceType<typeof BpmnJS> | null>(null)
+
+  const zoomBy = (delta: number) => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+
+    const canvas = viewer.get('canvas')
+    const current = canvas.zoom() as number
+    const next = Math.min(4, Math.max(0.2, +(current + delta).toFixed(2)))
+    canvas.zoom(next)
+  }
+
+  const fitToViewport = () => {
+    viewerRef.current?.get('canvas').zoom('fit-viewport')
+  }
 
   // Mount viewer once
   useEffect(() => {
@@ -93,6 +109,13 @@ export function BpmnViewer({ xml, label, diffItems = [], activeItemId, onReady }
   return (
     <div className="bpmn-viewer-wrapper">
       <div className="bpmn-viewer-label">{label}</div>
+      {showControls && (
+        <div className="bpmn-viewer-controls">
+          <button type="button" className="bpmn-viewer-control" onClick={() => zoomBy(0.2)} aria-label="Zoom in">+</button>
+          <button type="button" className="bpmn-viewer-control" onClick={() => zoomBy(-0.2)} aria-label="Zoom out">−</button>
+          <button type="button" className="bpmn-viewer-control" onClick={fitToViewport} aria-label="Fit diagram">⤢</button>
+        </div>
+      )}
       <div ref={containerRef} className="bpmn-viewer-canvas" />
     </div>
   )

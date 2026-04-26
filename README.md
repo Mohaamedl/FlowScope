@@ -2,6 +2,22 @@
 
 A web platform for comparing, editing, and reviewing BPMN 2.0 process models — with visual diff, XML diff, and live editing.
 
+## Licensing
+
+FlowScope uses a dual licensing model:
+
+### Open Source (AGPLv3)
+- Free to use, modify, and distribute
+- If used in a SaaS or network application, source code must be disclosed
+
+### Commercial License
+- Required for:
+  - Proprietary use without AGPL obligations
+  - Closed-source SaaS deployments
+  - Enterprise integrations
+
+To obtain a commercial license: https://github.com/Mohaamedl
+
 ## Features
 
 - **Visual Diff** — side-by-side BPMN diagram comparison with color-coded overlays (green = added, red = removed, yellow = modified)

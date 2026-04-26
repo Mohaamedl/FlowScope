@@ -70,8 +70,84 @@
 .app-main {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   overflow: hidden;
+  transition: grid-template-columns 0.3s ease-out;
+}
+
+.app-main--diff-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-main--diff-collapsed .diff-panel {
+  display: none !important;
+}
+
+/* ---- Drag and Drop ---- */
+.app-main--drag-active {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.app-main--drop-zone-left {
+  cursor: copy;
+}
+
+.app-main--drop-zone-right {
+  cursor: copy;
+}
+
+.app-main--drop-zone-left .viewer-pane--split:first-child {
+  background: rgba(34, 197, 94, 0.1);
+  border: 2px dashed var(--color-added);
+}
+
+.app-main--drop-zone-right .viewer-pane--split:last-of-type {
+  background: rgba(34, 197, 94, 0.1);
+  border: 2px dashed var(--color-added);
+}
+
+.viewer-pane {
+  transition: background 0.2s, border 0.2s;
+}
+
+.visual-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, var(--visual-left-width, 50%)) 10px minmax(0, 1fr);
+  min-width: 0;
+  height: 100%;
+}
+
+.viewer-pane--baseline,
+.viewer-pane--split {
+  min-width: 0;
+}
+
+.visual-splitter {
+  position: relative;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 5;
+}
+
+.visual-splitter:hover,
+.visual-splitter:focus-visible {
+  background: #253347;
+  outline: none;
+}
+
+.visual-splitter__handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--color-border);
+  transform: translate(-50%, -50%);
+  box-shadow: -8px 0 0 var(--color-border), 8px 0 0 var(--color-border);
 }
 
 /* ---- Viewer Panes ---- */
@@ -86,6 +162,33 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
+}
+
+.bpmn-viewer-controls {
+  position: absolute;
+  top: 46px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+.bpmn-viewer-control {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: rgba(15, 23, 42, 0.88);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.bpmn-viewer-control:hover {
+  background: #253347;
 }
 
 .bpmn-viewer-label {
@@ -99,7 +202,57 @@
 
 .bpmn-viewer-canvas {
   flex: 1;
+  min-width: 0;
   background: #fff;
+}
+
+/* ---- Modeler root (canvas + properties panel side-by-side) ---- */
+.bpmn-modeler-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.bpmn-modeler-workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.bpmn-modeler-canvas {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+}
+
+/* ---- bpmn-js-properties-panel ---- */
+.bpmn-properties-panel {
+  width: 260px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: #1e293b;
+  border-left: 1px solid var(--color-border);
+  transition: width 0.2s ease;
+}
+
+.bpmn-properties-panel--hidden {
+  width: 0;
+  overflow: hidden;
+  border-left: none;
+}
+
+/* Override properties panel theme to match dark UI */
+.bpmn-properties-panel .bio-properties-panel {
+  --color-background: #1e293b;
+  --color-background-light: #253347;
+  --color-border: #334155;
+  --color-text: #e2e8f0;
+  --color-text-inverted: #0f172a;
+  --color-text-secondary: #94a3b8;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-active: #3b82f6;
+  font-size: 12px;
 }
 
 /* bpmn-js diff marker CSS injected at build time */
@@ -131,8 +284,26 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 8px;
+  gap: 16px;
   color: var(--color-text-muted);
+  transition: background 0.2s;
+  padding: 24px;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.empty-state__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.app-main--drop-zone-left .empty-state--left,
+.app-main--drop-zone-right .empty-state--right {
+  background: rgba(34, 197, 94, 0.05);
 }
 
 .empty-state__hint {
@@ -178,6 +349,8 @@ button:disabled {
   flex-direction: column;
   overflow: hidden;
   background: var(--color-surface);
+  width: 320px;
+  transition: width 0.3s ease-out;
 }
 
 .diff-panel--empty {
@@ -186,6 +359,24 @@ button:disabled {
   color: var(--color-text-muted);
   padding: 16px;
   text-align: center;
+}
+
+.diff-panel--empty.diff-panel--collapsed {
+  padding: 0;
+}
+
+.diff-panel--empty.diff-panel--collapsed p {
+  display: none;
+}
+
+.diff-panel--collapsed {
+  width: 40px;
+}
+
+.diff-panel--collapsed .diff-panel__header,
+.diff-panel--collapsed .diff-panel__filters,
+.diff-panel--collapsed .diff-panel__list {
+  display: none;
 }
 
 .diff-panel__header {
@@ -380,7 +571,242 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* ---- View Toggle ---- */
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.view-btn {
+  border: none;
+  border-radius: 0;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+}
+
+.view-btn + .view-btn {
+  border-left: 1px solid var(--color-border);
+}
+
+.view-btn--active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* ---- Icon / Export buttons ---- */
+.icon-btn {
+  padding: 5px 8px;
+  font-size: 0.9rem;
+}
+
+.export-btn {
+  white-space: nowrap;
+  background: #1e3a2e;
+  border-color: #22c55e55;
+  color: var(--color-added);
+}
+
+.export-btn:hover:not(:disabled) {
+  background: #14532d;
+}
+
+/* ---- Split pane (diagram + collapsable XML drawer) ---- */
+.viewer-pane--split {
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-pane--split .bpmn-viewer-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- XML Drawer ---- */
+.xml-drawer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.xml-drawer__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  padding: 5px 10px;
+  background: var(--color-surface);
+  border: none;
+  border-radius: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+
+.xml-drawer__toggle:hover {
+  background: #253347;
+  color: var(--color-text);
+}
+
+.xml-drawer--open .xml-drawer__toggle {
+  border-bottom-color: var(--color-border);
+  color: var(--color-accent);
+}
+
+.xml-drawer__chevron {
+  font-size: 0.65rem;
+}
+
+.xml-drawer__body {
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.xml-drawer__body .xml-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.xml-editor__label {
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ---- XML Diff full-pane ---- */
+.xml-diff-pane {
+  grid-column: 1 / 3;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.xml-diff-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.xml-diff-labels {
+  display: flex;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.xml-diff-label {
+  flex: 1;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-right: 1px solid var(--color-border);
+}
+
+.xml-diff-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-muted);
+}
+
+/* ---- Editable badge ---- */
+.bpmn-viewer-label--editable {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editable-badge {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #1e3a2e;
+  color: var(--color-added);
+  border: 1px solid #22c55e44;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ---- Layout diff badge ---- */
+.diff-badge--layout { background: #38bdf8; color: #000; }
+.diff-item--layout  { }
+.diff-item__badge--layout { background: #38bdf8; color: #000; }
+
 /* ---- Scrollbars ---- */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+
+/* ---- Diff Panel Toggle ---- */
+.diff-panel__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px;
+  background: var(--color-surface);
+  border: none;
+  border-right: 1px solid var(--color-border);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  width: 40px;
+}
+
+.diff-panel__toggle:hover {
+  color: var(--color-text);
+  background: #253347;
+}
+
+.diff-panel__chevron {
+  font-size: 0.8rem;
+}
+
+/* ---- Properties Panel Toggle ---- */
+.bpmn-properties-panel__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 100%;
+  flex-shrink: 0;
+  padding: 0;
+  background: var(--color-surface);
+  border: none;
+  border-left: 1px solid var(--color-border);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: all 0.15s;
+}
+
+.bpmn-properties-panel__toggle:hover {
+  color: var(--color-text);
+  background: #253347;
+}
+
+.bpmn-properties-panel__toggle--collapsed {
+  border-left: none;
+  border-right: 1px solid var(--color-border);
+}
+
+.bpmn-properties-panel__chevron {
+  font-size: 0.8rem;
+}
+
+/* ---- Modeler workspace when properties panel is collapsed ---- */
+.bpmn-modeler-workspace--panel-collapsed {
+  justify-content: space-between;
+}

@@ -1,0 +1,31 @@
+FlowScope
+Copyright (C) 2026 FlowScope Contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+Additional Terms (FlowScope):
+
+1. Trademark Restriction
+   The name "FlowScope" and associated branding (logos, icons, etc.)
+   are not granted under this license. You may not use them for
+   derivative or competing products without explicit permission.
+
+2. SaaS / Network Use Clause Reminder
+   If you modify this program and run it as a service over a network,
+   you must provide the complete corresponding source code to users,
+   as required by AGPLv3 Section 13.
+
+3. Contribution License
+   By submitting contributions, you agree that your contributions
+   will be licensed under the same AGPLv3 license.

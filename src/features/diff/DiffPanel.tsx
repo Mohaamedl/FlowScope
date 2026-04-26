@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
-import { useStore } from '@/app/store'
 import type { DiffFilter } from '@/app/store'
+import { useStore } from '@/app/store'
 import type { DiffItem } from '@/core/models'
+import { useMemo } from 'react'
 
 const FILTERS: { value: DiffFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -11,7 +11,12 @@ const FILTERS: { value: DiffFilter; label: string }[] = [
   { value: 'layout', label: 'Layout' },
 ]
 
-export function DiffPanel() {
+interface DiffPanelProps {
+  open?: boolean
+  onToggle?: () => void
+}
+
+export function DiffPanel({ open = true, onToggle }: DiffPanelProps) {
   const diffSummary = useStore(s => s.diffSummary)
   const filter = useStore(s => s.filter)
   const activeItemId = useStore(s => s.activeItemId)
@@ -25,7 +30,15 @@ export function DiffPanel() {
 
   if (!diffSummary) {
     return (
-      <aside className="diff-panel diff-panel--empty">
+      <aside className={`diff-panel diff-panel--empty ${open ? '' : 'diff-panel--collapsed'}`}>
+        <button 
+          type="button" 
+          className="diff-panel__toggle" 
+          onClick={onToggle}
+          title={open ? 'Collapse' : 'Expand'}
+        >
+          <span className="diff-panel__chevron">{open ? '▾' : '▸'}</span>
+        </button>
         <p>Load two BPMN files and click <strong>Compare</strong> to see differences.</p>
       </aside>
     )
@@ -34,43 +47,56 @@ export function DiffPanel() {
   const { counts } = diffSummary
 
   return (
-    <aside className="diff-panel">
-      <header className="diff-panel__header">
-        <h2>Diff Results</h2>
-        <div className="diff-panel__counts">
-          <span className="badge badge--added">+{counts.added}</span>
-          <span className="badge badge--removed">-{counts.removed}</span>
-          <span className="badge badge--modified">~{counts.modified}</span>
-          <span className="badge badge--layout">⇥{counts.layout}</span>
-        </div>
-      </header>
+    <aside className={`diff-panel ${open ? '' : 'diff-panel--collapsed'}`}>
+      <button 
+        type="button" 
+        className="diff-panel__toggle" 
+        onClick={onToggle}
+        title={open ? 'Collapse' : 'Expand'}
+      >
+        <span className="diff-panel__chevron">{open ? '▾' : '▸'}</span>
+      </button>
+      
+      {open && (
+        <>
+          <header className="diff-panel__header">
+            <h2>Diff Results</h2>
+            <div className="diff-panel__counts">
+              <span className="badge badge--added">+{counts.added}</span>
+              <span className="badge badge--removed">-{counts.removed}</span>
+              <span className="badge badge--modified">~{counts.modified}</span>
+              <span className="badge badge--layout">⇥{counts.layout}</span>
+            </div>
+          </header>
 
-      <nav className="diff-panel__filters" aria-label="Filter diff results">
-        {FILTERS.map(f => (
-          <button
-            key={f.value}
-            type="button"
-            className={`filter-btn filter-btn--${f.value} ${filter === f.value ? 'filter-btn--active' : ''}`}
-            onClick={() => setFilter(f.value)}
-          >
-            {f.label}
-          </button>
-        ))}
-      </nav>
+          <nav className="diff-panel__filters" aria-label="Filter diff results">
+            {FILTERS.map(f => (
+              <button
+                key={f.value}
+                type="button"
+                className={`filter-btn filter-btn--${f.value} ${filter === f.value ? 'filter-btn--active' : ''}`}
+                onClick={() => setFilter(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </nav>
 
-      <ul className="diff-panel__list" role="list">
-        {filteredItems.length === 0 && (
-          <li className="diff-panel__empty">No changes in this category.</li>
-        )}
-        {filteredItems.map(item => (
-          <DiffItemRow
-            key={item.id}
-            item={item}
-            isActive={item.id === activeItemId}
-            onClick={() => setActiveItem(item.id === activeItemId ? null : item)}
-          />
-        ))}
-      </ul>
+          <ul className="diff-panel__list" role="list">
+            {filteredItems.length === 0 && (
+              <li className="diff-panel__empty">No changes in this category.</li>
+            )}
+            {filteredItems.map(item => (
+              <DiffItemRow
+                key={item.id}
+                item={item}
+                isActive={item.id === activeItemId}
+                onClick={() => setActiveItem(item.id === activeItemId ? null : item)}
+              />
+            ))}
+          </ul>
+        </>
+      )}
     </aside>
   )
 }

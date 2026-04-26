@@ -21,6 +21,24 @@ declare module 'bpmn-moddle' {
   }
 }
 
+// bpmn-js-properties-panel
+declare module 'bpmn-js-properties-panel' {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export const BpmnPropertiesPanelModule: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export const BpmnPropertiesProviderModule: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export const CamundaPlatformPropertiesProviderModule: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export const ZeebePropertiesProviderModule: any
+}
+
+declare module 'camunda-bpmn-js-behaviors/lib/camunda-platform' {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const CamundaBehaviors: any
+  export default CamundaBehaviors
+}
+
 // bpmn-js-differ
 declare module 'bpmn-js-differ' {
   export interface AttrChange {
