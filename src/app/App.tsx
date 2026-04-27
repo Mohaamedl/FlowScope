@@ -6,8 +6,8 @@ import { BpmnModeler, type BpmnModelerHandle } from '@/features/editor/BpmnModel
 import { BpmnViewer } from '@/features/editor/BpmnViewer'
 import { FileImport } from '@/features/editor/FileImport'
 import { XmlEditor } from '@/features/editor/XmlEditor'
-import { SearchBar } from '@/features/search/SearchBar'
 import { fetchGitHubBpmnAtRef, type GitCommitMetadata } from '@/features/git/githubService'
+import { SearchBar } from '@/features/search/SearchBar'
 import { FlowScopeBrand } from '@/shared/ui/FlowScopeBrand'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
@@ -437,7 +437,6 @@ export function App() {
                     label={leftModel.label}
                     diffItems={diffItems}
                     activeItemId={activeItemId}
-                    showControls
                   />
                   <XmlDrawer
                     open={leftXmlOpen}

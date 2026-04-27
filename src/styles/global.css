@@ -370,28 +370,45 @@ body {
 
 .bpmn-viewer-controls {
   position: absolute;
-  top: 46px;
-  right: 10px;
+  top: 52px;
+  right: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   z-index: 10;
+  background: linear-gradient(180deg, rgba(10, 17, 32, 0.92), rgba(8, 14, 28, 0.92));
+  padding: 8px;
+  border: 1px solid rgba(91, 124, 255, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .bpmn-viewer-control {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border-radius: 8px;
   border: 1px solid var(--color-border);
-  background: rgba(15, 23, 42, 0.88);
+  background: linear-gradient(180deg, rgba(30, 50, 80, 0.95), rgba(20, 35, 60, 0.95));
   color: var(--color-text);
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   line-height: 1;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bpmn-viewer-control:hover {
-  background: #253347;
+  background: linear-gradient(180deg, rgba(40, 65, 100, 0.95), rgba(25, 45, 75, 0.95));
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 12px rgba(91, 124, 255, 0.2);
+}
+
+.bpmn-viewer-control:active {
+  transform: scale(0.95);
 }
 
 .bpmn-viewer-label {
@@ -1003,7 +1020,6 @@ button:disabled {
 
 /* ---- Layout diff badge ---- */
 .diff-badge--layout { background: #38bdf8; color: #000; }
-.diff-item--layout  { }
 .diff-item__badge--layout { background: #38bdf8; color: #000; }
 
 /* ---- Scrollbars ---- */
@@ -1070,4 +1086,79 @@ button:disabled {
 /* ---- Modeler workspace when properties panel is collapsed ---- */
 .bpmn-modeler-workspace--panel-collapsed {
   justify-content: space-between;
+}
+
+
+/* ---- Context Pad (right-click menu on elements) ---- */
+.djs-context-pad {
+  --context-pad-entry-background-color: var(--color-surface);
+  --context-pad-entry-hover-background-color: #253347;
+  --context-pad-text-color: var(--color-text);
+}
+
+.djs-context-pad .entry {
+  background-color: var(--color-surface) !important;
+  box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.3) !important;
+  color: var(--color-text) !important;
+}
+
+.djs-context-pad .entry:hover {
+  background: #253347 !important;
+  color: var(--color-text) !important;
+}
+
+.djs-context-pad .entry svg {
+  fill: var(--color-text) !important;
+  stroke: var(--color-text) !important;
+}
+
+.djs-context-pad .entry:hover svg {
+  fill: var(--color-accent) !important;
+  stroke: var(--color-accent) !important;
+}
+
+/* ---- Popup menu (context menus) ---- */
+:root {
+  --popup-background-color: var(-color-text) !important;
+  --popup-border-color: var(--color-border) !important;
+  --popup-shadow-color: rgba(0, 0, 0, 0.3) !important;
+  --popup-text-color: var(--color-surface) !important;
+}
+
+.djs-popup {
+  background-color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.djs-popup .entry,
+.djs-popup .entry-header,
+.djs-popup-body .entry,
+.djs-popup-body .entry-header {
+  color: var(--color-text) !important;
+  background-color: var(--color-text) !important;
+}
+
+.djs-popup .entry:hover,
+.djs-popup .entry-header:hover {
+  background-color: #253347 !important;
+  color: var(--color-accent) !important;
+}
+
+.djs-popup .entry > a,
+.djs-popup button.entry {
+  color: var(--color-text) !important;
+}
+
+.djs-popup .entry > a:hover,
+.djs-popup button.entry:hover {
+  color: var(--color-accent) !important;
+}
+
+.djs-popup-header .entry {
+  color: var(--color-text) !important;
+}
+
+.djs-popup-entry-docs {
+  color: var(--color-text-muted) !important;
 }

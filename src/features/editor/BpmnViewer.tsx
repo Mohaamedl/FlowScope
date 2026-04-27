@@ -2,10 +2,10 @@ import type { DiffItem } from '@/core/models'
 import { useEffect, useRef } from 'react'
 
 // bpmn-js is CommonJS — types declared in src/global.d.ts
-import BpmnJS from 'bpmn-js'
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css'
 import 'bpmn-js/dist/assets/bpmn-js.css'
 import 'bpmn-js/dist/assets/diagram-js.css'
+import BpmnJS from 'bpmn-js/lib/NavigatedViewer'
 
 /** Color palette matching SRS FR-010. */
 const CHANGE_COLORS: Record<string, { stroke: string; fill: string }> = {
@@ -20,32 +20,22 @@ interface Props {
   diffItems?: DiffItem[]
   activeItemId?: string | null
   onReady?: () => void
-  showControls?: boolean
 }
 
-export function BpmnViewer({ xml, label, diffItems = [], activeItemId, onReady, showControls = false }: Props) {
+export function BpmnViewer({ xml, label, diffItems = [], activeItemId, onReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const viewerRef = useRef<InstanceType<typeof BpmnJS> | null>(null)
-
-  const zoomBy = (delta: number) => {
-    const viewer = viewerRef.current
-    if (!viewer) return
-
-    const canvas = viewer.get('canvas')
-    const current = canvas.zoom() as number
-    const next = Math.min(4, Math.max(0.2, +(current + delta).toFixed(2)))
-    canvas.zoom(next)
-  }
-
-  const fitToViewport = () => {
-    viewerRef.current?.get('canvas').zoom('fit-viewport')
-  }
+  // bpmn-js service typings are loose; use any for service lookups.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const viewerRef = useRef<any>(null)
 
   // Mount viewer once
   useEffect(() => {
     if (!containerRef.current) return
 
-    viewerRef.current = new BpmnJS({ container: containerRef.current })
+    viewerRef.current = new BpmnJS({
+      container: containerRef.current,
+      keyboard: { bindTo: containerRef.current },
+    })
 
     return () => {
       viewerRef.current?.destroy()
@@ -68,8 +58,8 @@ export function BpmnViewer({ xml, label, diffItems = [], activeItemId, onReady, 
     const viewer = viewerRef.current
     if (!viewer) return
 
-    const overlays = viewer.get('overlays')
-    const canvas = viewer.get('canvas')
+    const overlays = viewer.get('overlays') as any
+    const canvas = viewer.get('canvas') as any
     overlays.clear()
 
     for (const item of diffItems) {
@@ -78,7 +68,7 @@ export function BpmnViewer({ xml, label, diffItems = [], activeItemId, onReady, 
 
       try {
         // Highlight element via canvas marker (bpmn-js coloring API)
-        const elementRegistry = viewer.get('elementRegistry')
+        const elementRegistry = viewer.get('elementRegistry') as any
         const el = elementRegistry.get(item.elementId)
         if (!el) continue
 
@@ -109,13 +99,6 @@ export function BpmnViewer({ xml, label, diffItems = [], activeItemId, onReady, 
   return (
     <div className="bpmn-viewer-wrapper">
       <div className="bpmn-viewer-label">{label}</div>
-      {showControls && (
-        <div className="bpmn-viewer-controls">
-          <button type="button" className="bpmn-viewer-control" onClick={() => zoomBy(0.2)} aria-label="Zoom in">+</button>
-          <button type="button" className="bpmn-viewer-control" onClick={() => zoomBy(-0.2)} aria-label="Zoom out">−</button>
-          <button type="button" className="bpmn-viewer-control" onClick={fitToViewport} aria-label="Fit diagram">⤢</button>
-        </div>
-      )}
       <div ref={containerRef} className="bpmn-viewer-canvas" />
     </div>
   )
